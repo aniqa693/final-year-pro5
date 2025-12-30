@@ -1,3 +1,5 @@
+//api/signuot/route.ts
+
 import { NextResponse } from "next/server";
 import { clearSession } from "../../../../lib/session";
 

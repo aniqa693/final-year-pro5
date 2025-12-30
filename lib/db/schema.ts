@@ -1,3 +1,5 @@
+// lib/db/schema.ts
+
 import {
   pgTable,
   text,

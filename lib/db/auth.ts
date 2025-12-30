@@ -1,3 +1,4 @@
+// lib/db/auth.ts
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "."; // adjust your db import path

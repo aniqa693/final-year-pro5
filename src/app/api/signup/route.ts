@@ -9,6 +9,17 @@ export async function POST(request: Request) {
   try {
     const { name, email, password, role } = await request.json();
 
+    // Validate role
+    const validRoles = ["admin", "manager", "creator", "analyst", "client"];
+    const selectedRole = role || "creator";
+    
+    if (!validRoles.includes(selectedRole)) {
+      return NextResponse.json(
+        { error: "Invalid role selected" },
+        { status: 400 }
+      );
+    }
+
     // Check if user exists
     const existingUser = await db
       .select()
@@ -26,29 +37,9 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Default available roles based on selected role
-    let availableRoles = [role || "creator"];
-    
-    // Admin gets all roles
-    if (role === "admin") {
-      availableRoles = ["admin", "manager", "creator", "analyst", "client"];
-    }
-    // Manager gets manager, creator, analyst, client
-    else if (role === "manager") {
-      availableRoles = ["manager", "creator", "analyst", "client"];
-    }
-    // Creator gets creator and analyst
-    else if (role === "creator") {
-      availableRoles = ["creator", "analyst"];
-    }
-    // Analyst only gets analyst
-    else if (role === "analyst") {
-      availableRoles = ["analyst"];
-    }
-    // Client only gets client
-    else if (role === "client") {
-      availableRoles = ["client"];
-    }
+    // IMPORTANT: Users only get their selected role in availableRoles
+    // No extra roles for regular users
+    const availableRoles = [selectedRole];
 
     // Create user
     const [user] = await db
@@ -57,16 +48,17 @@ export async function POST(request: Request) {
         name,
         email,
         password: hashedPassword,
-        role: role || "creator",
-        availableRoles,
+        role: selectedRole,
+        availableRoles, // Only their selected role
         bio: "",
         company: "",
         location: "",
         website: "",
+        credits: selectedRole === "creator" ? 100 : 0, // Give creators some initial credits
       })
       .returning();
 
-    // Set session
+    // Set session with only their role
     await setSession(user.email, user.role, availableRoles);
 
     return NextResponse.json(
@@ -77,12 +69,7 @@ export async function POST(request: Request) {
           name: user.name, 
           email: user.email, 
           role: user.role,
-          availableRoles,
-          image: user.image,
-          bio: user.bio,
-          company: user.company,
-          location: user.location,
-          website: user.website,
+          availableRoles, // Only their selected role
         },
         message: "Account created successfully" 
       },

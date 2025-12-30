@@ -1,3 +1,5 @@
+//api/check-email/route.ts
+
 import { db } from "../../../../lib/db";
 import { users } from "../../../../lib/db/schema";
 import { eq } from "drizzle-orm";

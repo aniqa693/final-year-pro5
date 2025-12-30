@@ -1,11 +1,13 @@
+// app/components/admin/AdminLayout.tsx
 "use client";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import ProfileManager from './ProfileManager';
-import RoleSwitcher from './RoleSwitcher';
-import RoleSidebar from './dashboards/sidebars/RoleSidebar';
-import ResetToAdminButton from './dashboards/ResetToAdminButton';
+import AdminSidebar from '@/app/components/dashboards/sidebars/AdminSidebar';
+import RoleSwitcher from '@/app/components/RoleSwitcher';
+import ProfileManager from '@/app/components/ProfileManager';
+
+
 
 interface User {
   id: string;
@@ -16,29 +18,19 @@ interface User {
   image?: string;
 }
 
-interface DashboardLayoutProps {
+interface AdminLayoutProps {
   children: React.ReactNode;
-  userRole: string;
-  availableRoles?: string[];
-  originalRole?: string; // Add this prop
 }
 
-export default function DashboardLayout({ 
-  children, 
-  userRole, 
-  availableRoles = [],
-  originalRole // Get this from parent
-}: DashboardLayoutProps) {
+export default function AdminLayout({ children }: AdminLayoutProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [showResetButton, setShowResetButton] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     fetchUserProfile();
-    checkOriginalRole();
-  }, [userRole, originalRole]); // Add originalRole to dependencies
+  }, []);
 
   const fetchUserProfile = async () => {
     try {
@@ -49,31 +41,6 @@ export default function DashboardLayout({
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-    }
-  };
-
-  const checkOriginalRole = () => {
-    // Method 1: Check if originalRole was passed as prop
-    if (originalRole === 'admin' && userRole !== 'admin') {
-      setShowResetButton(true);
-      return;
-    }
-    
-    // Method 2: Fallback to checking cookies client-side
-    try {
-      const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-        return null;
-      };
-      
-      const cookieOriginalRole = getCookie('original-role');
-      if (cookieOriginalRole === 'admin' && userRole !== 'admin') {
-        setShowResetButton(true);
-      }
-    } catch (error) {
-      console.error('Error checking cookies:', error);
     }
   };
 
@@ -92,63 +59,55 @@ export default function DashboardLayout({
     client: { color: 'bg-orange-100 text-orange-800 border-orange-200', icon: '💼', gradient: 'from-orange-500 to-amber-500' }
   };
 
-  const currentRoleConfig = roleConfig[userRole as keyof typeof roleConfig] || roleConfig.creator;
+  const currentRoleConfig = roleConfig['admin']; // Admin always uses admin styling
 
-  const userAvailableRoles = userRole === 'admin' 
-    ? ['admin', 'creator', 'analyst', 'manager', 'client']
-    : availableRoles.length > 0 
-      ? availableRoles 
-      : [userRole];
+  // Admin has access to all roles
+  const adminAvailableRoles = ['admin', 'creator', 'analyst', 'manager', 'client'];
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <RoleSidebar 
-        role={userRole as 'admin' | 'creator' | 'analyst'} 
+      {/* Admin Sidebar */}
+      <AdminSidebar 
         className={sidebarCollapsed ? 'w-20' : 'w-64'}
+        onLogout={handleLogout}
       />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Navigation Header */}
+        {/* Admin Header */}
         <nav className="bg-white shadow-sm border-b">
           <div className="px-6">
             <div className="flex justify-between items-center h-16">
               {/* Left side */}
               <div className="flex items-center space-x-6">
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  {sidebarCollapsed ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                    </svg>
+                  )}
+                </button>
                 <h1 className="text-xl font-bold text-gray-900">
-                  <span className={`bg-gradient-to-r ${currentRoleConfig.gradient} bg-clip-text text-transparent`}>
-                    SocialAI
+                  <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    Admin Panel
                   </span>
                 </h1>
-                <a 
-                  href="/" 
-                  className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium"
-                >
-                  Home
-                </a>
               </div>
 
               {/* Right side */}
               <div className="flex items-center space-x-4">
-                {/* Reset to Admin Button - Show when admin switched to another role */}
-                {showResetButton && (
-                  <ResetToAdminButton />
-                )}
-
-                {/* Role Switcher - Only for admin with multiple roles */}
-                {userRole === 'admin' && userAvailableRoles.length > 1 ? (
-                  <RoleSwitcher 
-                    currentRole={userRole} 
-                    availableRoles={userAvailableRoles} 
-                  />
-                ) : (
-                  // Role Indicator for non-admin
-                  <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg border ${currentRoleConfig.color}`}>
-                    <span className="text-sm">{currentRoleConfig.icon}</span>
-                    <span className="text-sm font-medium capitalize">{userRole}</span>
-                  </div>
-                )}
+                {/* Role Switcher - Admin can switch to any role */}
+                <RoleSwitcher 
+                  currentRole="admin" 
+                  availableRoles={adminAvailableRoles} 
+                />
 
                 {/* Notifications */}
                 <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
@@ -170,13 +129,13 @@ export default function DashboardLayout({
                       className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
-                    <div className={`w-8 h-8 bg-gradient-to-r ${currentRoleConfig.gradient} rounded-full flex items-center justify-center text-white text-sm font-semibold`}>
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                      {user?.name?.charAt(0).toUpperCase() || 'A'}
                     </div>
                   )}
                   <div className="hidden md:block text-left">
-                    <p className="text-sm font-medium">{user?.name || 'User'}</p>
-                    <p className="text-xs text-gray-500 capitalize">{userRole}</p>
+                    <p className="text-sm font-medium">{user?.name || 'Admin'}</p>
+                    <p className="text-xs text-gray-500">Administrator</p>
                   </div>
                 </button>
 
@@ -204,12 +163,12 @@ export default function DashboardLayout({
         <footer className="bg-white border-t px-6 py-4">
           <div className="flex justify-between items-center text-sm text-gray-600">
             <div>
-              <span className="font-medium">SocialAI</span> • All rights reserved © {new Date().getFullYear()}
+              <span className="font-medium">SocialAI Admin</span> • All rights reserved © {new Date().getFullYear()}
             </div>
             <div className="flex items-center space-x-4">
-              <a href="#" className="hover:text-gray-900">Privacy Policy</a>
-              <a href="#" className="hover:text-gray-900">Terms of Service</a>
-              <a href="#" className="hover:text-gray-900">Help</a>
+              <a href="#" className="hover:text-gray-900">System Status</a>
+              <a href="#" className="hover:text-gray-900">Documentation</a>
+              <a href="#" className="hover:text-gray-900">Support</a>
             </div>
           </div>
         </footer>

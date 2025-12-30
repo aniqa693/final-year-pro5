@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 
 export async function getSession() {
   const cookieStore = await cookies();
-  const userEmail = cookieStore.get("user-email")?.value;
-  const userRole = cookieStore.get("user-role")?.value;
-  const availableRoles = cookieStore.get("available-roles")?.value;
+  const userRole = cookieStore.get('user-role')?.value;
+  const userEmail = cookieStore.get('user-email')?.value;
+  const availableRoles = cookieStore.get('available-roles')?.value;
 
   if (!userEmail || !userRole) {
     return null;
@@ -56,24 +56,12 @@ export async function switchRole(newRole: string) {
 export async function clearSession() {
   const cookieStore = await cookies();
   
-  cookieStore.set("user-email", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-  });
-
-  cookieStore.set("user-role", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-  });
-
-  cookieStore.set("available-roles", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
+  ['user-email', 'user-role', 'available-roles'].forEach(cookieName => {
+    cookieStore.set(cookieName, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 0,
+    });
   });
 }

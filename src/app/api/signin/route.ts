@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get available roles from database or use default
+    // Get available roles from database (users only have their assigned role)
     const availableRoles = user[0].availableRoles || [user[0].role];
 
     // Set session
@@ -48,11 +48,6 @@ export async function POST(request: Request) {
           email: user[0].email, 
           role: user[0].role,
           availableRoles,
-          image: user[0].image,
-          bio: user[0].bio,
-          company: user[0].company,
-          location: user[0].location,
-          website: user[0].website,
         },
         message: "Signed in successfully" 
       }
