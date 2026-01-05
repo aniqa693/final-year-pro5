@@ -122,7 +122,7 @@ export default async function CreatorDashboardPage() {
                     <div className="font-medium text-gray-900">{content.title}</div>
                     <div className="text-sm text-gray-500">{content.platform}</div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right" >
                     <div className="font-bold text-gray-900">{content.engagement}</div>
                     <div className="text-xs text-green-600">↑ 12%</div>
                   </div>
@@ -134,4 +134,4 @@ export default async function CreatorDashboardPage() {
       </div>
     
   );
-}
+}   

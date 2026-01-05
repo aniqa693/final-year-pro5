@@ -3,7 +3,6 @@ import { users } from "../../../../lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { setSession } from "../../../../lib/session";
 
 export async function POST(request: Request) {
   try {
@@ -33,13 +32,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Get available roles from database (users only have their assigned role)
+    // Get available roles from database
     const availableRoles = user[0].availableRoles || [user[0].role];
 
-    // Set session
-    await setSession(user[0].email, user[0].role, availableRoles);
-
-    return NextResponse.json(
+    // Create response
+    const response = NextResponse.json(
       { 
         success: true, 
         user: { 
@@ -52,6 +49,41 @@ export async function POST(request: Request) {
         message: "Signed in successfully" 
       }
     );
+
+    // Set cookies that will be accessible in server-side API routes
+    response.cookies.set({
+      name: 'user-email',
+      value: user[0].email,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    response.cookies.set({
+      name: 'user-role',
+      value: user[0].role,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
+
+    response.cookies.set({
+      name: 'user-id',
+      value: user[0].id.toString(),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+    });
+
+    // Also set in localStorage via client-side will be handled in frontend
+    return response;
+
   } catch (error) {
     console.error("Sign in error:", error);
     return NextResponse.json(
